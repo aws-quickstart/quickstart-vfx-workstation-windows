@@ -20,8 +20,5 @@ global:
  
 tests:
   quickstart-vfx-workstation-windowst1:
-    parameter_input: quickstart-vfx-workstation-windows-example-params1.json
-    template_file: quickstart-vfx-workstation-windows-example1.template
-  quickstart-vfx-workstation-windowst2:
-    parameter_input: quickstart-vfx-workstation-windows-example-params2.json
-    template_file: quickstart-vfx-workstation-windows-example2.template
+    parameter_input: cloud-vfx-workstation-master.json
+    template_file: cloud-vfx-workstation-master.template
