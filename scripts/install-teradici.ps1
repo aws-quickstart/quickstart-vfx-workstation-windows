@@ -36,6 +36,10 @@ try {
         }
     }
 
+    # Disable Secure Attention Sequence (SAS) so that CTRL+ALT+Delete works w/Teradici
+    $registryPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
+    New-ItemProperty -Path $registryPath -Name "DisableCAD" -Value "0" -PropertyType DWORD -Force
+
     if ([System.IO.Path]::GetExtension($Destination) -eq '.exe') {
        Write-Verbose "Start install of Teradici ..."
        # '/NoPostReboot' - to prevent reboot
