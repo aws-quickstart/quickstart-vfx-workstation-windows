@@ -15,7 +15,8 @@
                         "PrivateSubnet2CIDR",
                         "PublicSubnet1CIDR",
                         "PublicSubnet2CIDR",
-                        "RDGWCIDR"
+                        "RDGWCIDR",
+                        "VFXHostAccessCIDR"
                     ]
                 },
                 {
@@ -263,6 +264,13 @@
             "ConstraintDescription": "CIDR block parameter must be in the form x.x.x.x/16-28",
             "Default": "10.0.0.0/16",
             "Description": "CIDR Block for the VPC",
+            "Type": "String"
+        },
+        "VFXHostAccessCIDR": {
+            "AllowedPattern": "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$",
+            "ConstraintDescription": "CIDR block parameter must be in the form x.x.x.x/16-28",
+            "Default": "10.0.128.0/20",
+            "Description": "CIDR Block for the VFX Host to control authorized access.",
             "Type": "String"
         }
     },
@@ -514,6 +522,9 @@
                             "VPCStack",
                             "Outputs.VPCID"
                         ]
+                    },
+                    "VFXHostAccessCIDR": {
+                        "Ref": "VFXHostAccessCIDR"
                     }
                 }
             }

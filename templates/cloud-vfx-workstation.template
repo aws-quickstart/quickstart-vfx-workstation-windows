@@ -421,6 +421,7 @@
                         "config": [
                             "setup",
                             "configInstance",
+                            "joinDomain",
                             "finalize"
                         ]
                     },
