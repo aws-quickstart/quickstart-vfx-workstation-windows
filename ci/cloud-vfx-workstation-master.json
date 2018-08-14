@@ -1,7 +1,7 @@
 [
     {
         "ParameterKey": "AvailabilityZones",
-        "ParameterValue": "$[alfred_getaz_2]"
+        "ParameterValue": "$[taskcat_genaz_2]"
     },
     {
         "ParameterKey": "DomainAdminUser",
@@ -9,7 +9,7 @@
     },
     {
         "ParameterKey": "DomainAdminPassword",
-        "ParameterValue": "$[alfred_genpass_32]"
+        "ParameterValue": "$[taskcat_genpass_16A]"
     },
     {
         "ParameterKey": "VFXHostInstanceType",
@@ -21,7 +21,7 @@
     },
     {
         "ParameterKey": "RestoreModePassword",
-        "ParameterValue": "$[alfred_genpass_32]"
+        "ParameterValue": "$[taskcat_genpass_16A]"
     },
     {
         "ParameterKey": "RDGWCIDR",
