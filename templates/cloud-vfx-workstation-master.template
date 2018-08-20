@@ -24,6 +24,7 @@
                         "default": "Amazon EC2 Configuration"
                     },
                     "Parameters": [
+                        "EBSVolumeSize",
                         "KeyPairName",
                         "RDGWInstanceType",
                         "NumberOfVFXHosts"
@@ -74,6 +75,9 @@
                 },
                 "DomainNetBIOSName": {
                     "default": "Domain NetBIOS Name"
+                },
+                "EBSVolumeSize": {
+                    "default": "EBS Volume size for EC2 instance"
                 },
                 "KeyPairName": {
                     "default": "Key Pair Name"
@@ -147,6 +151,13 @@
             "MaxLength": "15",
             "MinLength": "1",
             "Type": "String"
+        },
+        "EBSVolumeSize": {
+            "Default": "100",
+            "Description": "Volume size for the VFX Host, in GiB",
+            "MaxValue": "16000",
+            "MinValue": "100",
+            "Type": "Number"
         },
         "VFXHostInstanceType": {
             "AllowedValues": [
@@ -489,6 +500,9 @@
                     },
                     "DomainNetBIOSName": {
                         "Ref": "DomainNetBIOSName"
+                    },
+                    "EBSVolumeSize": {
+                        "Ref": "EBSVolumeSize"
                     },
                     "VFXHostInstanceType": {
                         "Ref": "VFXHostInstanceType"
