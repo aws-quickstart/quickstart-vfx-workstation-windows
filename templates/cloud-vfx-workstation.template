@@ -34,7 +34,8 @@
                         "DomainDNSName",
                         "DomainNetBIOSName",
                         "DomainAdminUser",
-                        "DomainAdminPassword"
+                        "DomainAdminPassword",
+                        "DomainMemberSGID"
                     ]
                 },
                 {
@@ -70,7 +71,10 @@
                     "default": "VFX Host Instance Type"
                 },
                 "VFXHostAccessCIDR": {
-                    "default": "CIDR to restrict access to VFX host"
+                    "default": "VFX Host Access CIDR"
+                },
+                "NumberOfVFXHosts": {
+                    "default": "Number of VFX Hosts"
                 },
                 "KeyPairName": {
                     "default": "Key Pair Name"
@@ -104,7 +108,7 @@
         },
         "DomainAdminUser": {
             "AllowedPattern": "[a-zA-Z0-9]*",
-            "Default": "StackAdmin",
+            "Default": "Admin",
             "Description": "User name for the account that will be added as Domain Administrator. This is separate from the default \"Administrator\" account",
             "MaxLength": "25",
             "MinLength": "5",
@@ -159,7 +163,18 @@
             "Type": "AWS::EC2::KeyPair::KeyName"
         },
         "NumberOfVFXHosts": {
-            "Description": "Number of VFX Hosts to spin up.",
+            "AllowedValues": [
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8"
+            ],
+            "Default": "1",
+            "Description": "Enter the number of VFX hosts to create",
             "Type": "String"
         },
         "PublicSubnet1ID": {

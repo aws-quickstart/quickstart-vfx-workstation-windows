@@ -27,7 +27,8 @@
                         "EBSVolumeSize",
                         "KeyPairName",
                         "RDGWInstanceType",
-                        "NumberOfVFXHosts"
+                        "NumberOfVFXHosts",
+                        "VFXHostInstanceType"
                     ]
                 },
                 {
@@ -109,8 +110,20 @@
                 "RestoreModePassword": {
                     "default": "Restore Mode Password"
                 },
+                "NumberOfRDGWHosts": {
+                    "default": "Number of Remote Desktop Gateway Hosts"
+                },
                 "VPCCIDR": {
                     "default": "VPC CIDR"
+                },
+                "VFXHostAccessCIDR": {
+                    "default": "VFX Host Access CIDR"
+                },
+                "VFXHostInstanceType": {
+                    "default": "VFX Host Instance Type"
+                },
+                "NumberOfVFXHosts": {
+                    "default": "Number of VFX Hosts"
                 }
             }
         }
