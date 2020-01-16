@@ -210,31 +210,31 @@
                 "WS2016FULLBASE": "Windows_Server-2016-English-Full-Base-2019.06.12"
             },
             "ap-northeast-1": {
-                "WS2016FULLBASE": "ami-04f188a745c1a5ecb"
+                "WS2016FULLBASE": "ami-0c35722264774a959"
             },
             "ap-southeast-1": {
-                "WS2016FULLBASE": "ami-0ee7d851f6067a32a"
+                "WS2016FULLBASE": "ami-02f8bb5d22d8a6f45"
             },
             "ap-southeast-2": {
-                "WS2016FULLBASE": "ami-0502d8da978325e3b"
+                "WS2016FULLBASE": "ami-076acf0f99b739999"
             },
             "eu-central-1": {
-                "WS2016FULLBASE": "ami-0d0a7c3ad4944bbde"
+                "WS2016FULLBASE": "ami-0cbf1b1038bbb408d"
             },
             "eu-west-1": {
-                "WS2016FULLBASE": "ami-03e785f2620db42b7"
+                "WS2016FULLBASE": "ami-0e484c84e6d59f3a3"
             },
             "us-east-1": {
-                "WS2016FULLBASE": "ami-00c96c304f033dfbe"
+                "WS2016FULLBASE": "ami-02daaf23b3890d162"
             },
             "us-east-2": {
-                "WS2016FULLBASE": "ami-084c1257f64cd7db9"
+                "WS2016FULLBASE": "ami-0833104f83deab338"
             },
             "us-west-1": {
-                "WS2016FULLBASE": "ami-053e7390d80e9762f"
+                "WS2016FULLBASE": "ami-08dc1ca51e27079b0"
             },
             "us-west-2": {
-                "WS2016FULLBASE": "ami-02a58aeaf6a5f726d"
+                "WS2016FULLBASE": "ami-09e71fb1baf16d0cd"
             }
         }
     },
