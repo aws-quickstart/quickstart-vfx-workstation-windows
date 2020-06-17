@@ -1,694 +1,420 @@
-{
-    "AWSTemplateFormatVersion": "2010-09-09",
-    "Description": "This template deploys the VFX Workstation Quick Start. **WARNING** This template creates Amazon EC2 Windows instance and related resources. You will be billed for the AWS resources used if you create a stack from this template. (qs-1onmm5nfl)",
-    "Metadata": {
-        "AWS::CloudFormation::Interface": {
-            "ParameterGroups": [
-                {
-                    "Label": {
-                        "default": "Network configuration"
-                    },
-                    "Parameters": [
-                        "VPCID",
-                        "PublicSubnet1ID",
-                        "PublicSubnet2ID"
-                    ]
-                },
-                {
-                    "Label": {
-                        "default": "Amazon EC2 configuration"
-                    },
-                    "Parameters": [
-                        "VFXHostInstanceType",
-                        "NumberOfVFXHosts",
-                        "EBSVolumeSize",
-                        "VFXHostAccessCIDR",
-                        "KeyPairName"
-                    ]
-                },
-                {
-                    "Label": {
-                        "default": "Microsoft Active Directory Configuration"
-                    },
-                    "Parameters": [
-                        "DomainDNSName",
-                        "DomainNetBIOSName",
-                        "DomainAdminUser",
-                        "DomainAdminPassword",
-                        "DomainMemberSGID"
-                    ]
-                },
-                {
-                    "Label": {
-                        "default": "AWS Quick Start configuration"
-                    },
-                    "Parameters": [
-                        "QSS3BucketName",
-                        "QSS3KeyPrefix"
-                    ]
-                }
-            ],
-            "ParameterLabels": {
-                "DomainAdminPassword": {
-                    "default": "Domain Admin Password"
-                },
-                "DomainAdminUser": {
-                    "default": "Domain Admin User Name"
-                },
-                "DomainDNSName": {
-                    "default": "Domain DNS Name"
-                },
-                "DomainMemberSGID": {
-                    "default": "Domain Member Security Group ID"
-                },
-                "DomainNetBIOSName": {
-                    "default": "Domain NetBIOS Name"
-                },
-                "EBSVolumeSize": {
-                    "default": "EBS Volume size for EC2 instance"
-                },
-                "VFXHostInstanceType": {
-                    "default": "VFX Host Instance Type"
-                },
-                "VFXHostAccessCIDR": {
-                    "default": "VFX Host Access CIDR"
-                },
-                "NumberOfVFXHosts": {
-                    "default": "Number of VFX Hosts"
-                },
-                "KeyPairName": {
-                    "default": "Key Pair Name"
-                },
-                "PublicSubnet1ID": {
-                    "default": "Public Subnet 1 ID"
-                },
-                "PublicSubnet2ID": {
-                    "default": "Public Subnet 2 ID"
-                },
-                "QSS3BucketName": {
-                    "default": "Quick Start S3 Bucket Name"
-                },
-                "QSS3KeyPrefix": {
-                    "default": "Quick Start S3 Key Prefix"
-                },
-                "VPCID": {
-                    "default": "VPC ID"
-                }
-            }
-        }
-    },
-    "Parameters": {
-        "DomainAdminPassword": {
-            "AllowedPattern": "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
-            "Description": "Password for the domain admin user. Must be at least 8 characters containing letters, numbers and symbols",
-            "MaxLength": "32",
-            "MinLength": "8",
-            "NoEcho": "true",
-            "Type": "String"
-        },
-        "DomainAdminUser": {
-            "AllowedPattern": "[a-zA-Z0-9]*",
-            "Default": "Admin",
-            "Description": "User name for the account that will be added as Domain Administrator. This is separate from the default \"Administrator\" account",
-            "MaxLength": "25",
-            "MinLength": "5",
-            "Type": "String"
-        },
-        "DomainDNSName": {
-            "AllowedPattern": "[a-zA-Z0-9]+\\..+",
-            "Default": "example.com",
-            "Description": "Fully qualified domain name (FQDN) of the forest root domain e.g. corp.example.com",
-            "MaxLength": "255",
-            "MinLength": "2",
-            "Type": "String"
-        },
-        "DomainMemberSGID": {
-            "Description": "ID of the Domain Member Security Group (e.g., sg-7f16e910)",
-            "Type": "AWS::EC2::SecurityGroup::Id"
-        },
-        "DomainNetBIOSName": {
-            "AllowedPattern": "[a-zA-Z0-9]+",
-            "Default": "example",
-            "Description": "NetBIOS name of the domain (upto 15 characters) for users of earlier versions of Windows e.g. CORP",
-            "MaxLength": "15",
-            "MinLength": "1",
-            "Type": "String"
-        },
-        "EBSVolumeSize": {
-            "Default": "100",
-            "Description": "Volume size for the VFX Host, in GiB",
-            "MaxValue": "16000",
-            "MinValue": "100",
-            "Type": "Number"
-        },
-        "VFXHostInstanceType": {
-            "AllowedValues": [
-                "g3.4xlarge",
-                "g3.8xlarge",
-                "g3.16xlarge"
-            ],
-            "Default": "g3.4xlarge",
-            "Description": "Which GPU instance type for the VFX Host (necessary for accelerated vfx workstation performance)",
-            "Type": "String"
-        },
-        "VFXHostAccessCIDR": {
-            "AllowedPattern": "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$",
-            "ConstraintDescription": "CIDR block parameter must be in the form x.x.x.x/16-28",
-            "Default": "10.0.128.0/20",
-            "Description": "CIDR Block for the VFX Host to control authorized access.",
-            "Type": "String"
-        },
-        "KeyPairName": {
-            "Description": "Public/private key pairs allow you to securely connect to your instance after it launches",
-            "Type": "AWS::EC2::KeyPair::KeyName"
-        },
-        "NumberOfVFXHosts": {
-            "AllowedValues": [
-                "1",
-                "2",
-                "3",
-                "4",
-                "5",
-                "6",
-                "7",
-                "8"
-            ],
-            "Default": "1",
-            "Description": "Enter the number of VFX hosts to create",
-            "Type": "String"
-        },
-        "PublicSubnet1ID": {
-            "Description": "ID of the public subnet 1 in Availability Zone 1 (e.g., subnet-e3246d8e)",
-            "Type": "AWS::EC2::Subnet::Id"
-        },
-        "PublicSubnet2ID": {
-            "Description": "ID of the public subnet 2 in Availability Zone 2 (e.g., subnet-e3246d8e)",
-            "Type": "AWS::EC2::Subnet::Id"
-        },
-        "QSS3BucketName": {
-            "AllowedPattern": "^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$",
-            "ConstraintDescription": "Quick Start bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).",
-            "Default": "aws-quickstart",
-            "Description": "S3 bucket name for the Quick Start assets. Quick Start bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).",
-            "Type": "String"
-        },
-        "QSS3KeyPrefix": {
-            "AllowedPattern": "^[0-9a-zA-Z-/]*$",
-            "ConstraintDescription": "Quick Start key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/).",
-            "Default": "quickstart-vfx-workstation-windows/",
-            "Description": "S3 key prefix for the Quick Start assets. Quick Start key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/).",
-            "Type": "String"
-        },
-        "VPCID": {
-            "Description": "ID of the VPC (e.g., vpc-0343606e)",
-            "Type": "AWS::EC2::VPC::Id"
-        }
-    },
-    "Mappings": {
-        "AWSAMIRegionMap": {
-            "AMI": {
-                "WS2016FULLBASE": "Windows_Server-2016-English-Full-Base-2019.06.12"
-            },
-            "ap-northeast-1": {
-                "WS2016FULLBASE": "ami-07b21875a32ff7047"
-            },
-            "ap-southeast-1": {
-                "WS2016FULLBASE": "ami-04ea5e0cb6ab293e0"
-            },
-            "ap-southeast-2": {
-                "WS2016FULLBASE": "ami-062543b3f8ea66c89"
-            },
-            "eu-central-1": {
-                "WS2016FULLBASE": "ami-01ff06d6c38ed6008"
-            },
-            "eu-west-1": {
-                "WS2016FULLBASE": "ami-0a2b07f79c45eeef1"
-            },
-            "us-east-1": {
-                "WS2016FULLBASE": "ami-0f969b429284d6156"
-            },
-            "us-east-2": {
-                "WS2016FULLBASE": "ami-02ec6f788a1f1a739"
-            },
-            "us-west-1": {
-                "WS2016FULLBASE": "ami-0a017e6b84bbbca59"
-            },
-            "us-west-2": {
-                "WS2016FULLBASE": "ami-0bd8c602fafdca7b5"
-            }
-        }
-    },
-    "Rules": {
-        "SubnetsInVPC": {
-            "Assertions": [
-                {
-                    "Assert": {
-                        "Fn::EachMemberIn": [
-                            {
-                                "Fn::ValueOfAll": [
-                                    "AWS::EC2::Subnet::Id",
-                                    "VpcId"
-                                ]
-                            },
-                            {
-                                "Fn::RefAll": "AWS::EC2::VPC::Id"
-                            }
-                        ]
-                    },
-                    "AssertDescription": "All subnets must be in the VPC"
-                }
-            ]
-        }
-    },
-    "Resources": {
-        "VFXHostRole": {
-            "Type": "AWS::IAM::Role",
-            "Properties": {
-                "Policies": [
-                    {
-                        "PolicyDocument": {
-                            "Version": "2012-10-17",
-                            "Statement": [
-                                {
-                                    "Action": [
-                                        "s3:GetObject"
-                                    ],
-                                    "Resource": {
-                                        "Fn::Sub": "arn:aws:s3:::${QSS3BucketName}/${QSS3KeyPrefix}*"
-                                    },
-                                    "Effect": "Allow"
-                                },
-                                {
-                                    "Action": [
-                                        "s3:ListBucket"
-                                    ],
-                                    "Resource": {
-                                        "Fn::Sub": "arn:aws:s3:::ec2-windows-nvidia-drivers"
-                                    },
-                                    "Effect": "Allow"
-                                },
-                                {
-                                    "Action": [
-                                        "s3:GetObject"
-                                    ],
-                                    "Resource": {
-                                        "Fn::Sub": "arn:aws:s3:::ec2-windows-nvidia-drivers/*"
-                                    },
-                                    "Effect": "Allow"
-                                }
-                            ]
-                        },
-                        "PolicyName": "aws-quick-start-s3-policy"
-                    }
-                ],
-                "Path": "/",
-                "AssumeRolePolicyDocument": {
-                    "Statement": [
-                        {
-                            "Action": [
-                                "sts:AssumeRole"
-                            ],
-                            "Principal": {
-                                "Service": [
-                                    "ec2.amazonaws.com"
-                                ]
-                            },
-                            "Effect": "Allow"
-                        }
-                    ],
-                    "Version": "2012-10-17"
-                }
-            }
-        },
-        "VFXHostProfile": {
-            "Type": "AWS::IAM::InstanceProfile",
-            "Properties": {
-                "Roles": [
-                    {
-                        "Ref": "VFXHostRole"
-                    }
-                ],
-                "Path": "/"
-            }
-        },
-        "VFXHostSecurityGroup": {
-            "Type": "AWS::EC2::SecurityGroup",
-            "Properties": {
-                "GroupDescription": "ssh and rdp",
-                "SecurityGroupIngress": [
-                    {
-                        "IpProtocol": "tcp",
-                        "FromPort": "3389",
-                        "ToPort": "3389",
-                        "SourceSecurityGroupId": {
-                            "Ref": "DomainMemberSGID"
-                        }
-                    },
-                    {
-                        "IpProtocol": "tcp",
-                        "FromPort": "443",
-                        "ToPort": "443",
-                        "CidrIp": {
-                            "Ref": "VFXHostAccessCIDR"
-                        }
-                    },
-                    {
-                        "IpProtocol": "udp",
-                        "FromPort": "4172",
-                        "ToPort": "4172",
-                        "CidrIp": {
-                            "Ref": "VFXHostAccessCIDR"
-                        }
-                    },
-                    {
-                        "IpProtocol": "tcp",
-                        "FromPort": "4172",
-                        "ToPort": "4172",
-                        "CidrIp": {
-                            "Ref": "VFXHostAccessCIDR"
-                        }
-                    }
-                ],
-                "VpcId": {
-                    "Ref": "VPCID"
-                }
-            }
-        },
-        "VFXHostAutoScalingGroup": {
-            "Type": "AWS::AutoScaling::AutoScalingGroup",
-            "Properties": {
-                "LaunchConfigurationName": {
-                    "Ref": "VFXHostLaunchConfiguration"
-                },
-                "VPCZoneIdentifier": [
-                    {
-                        "Ref": "PublicSubnet1ID"
-                    },
-                    {
-                        "Ref": "PublicSubnet2ID"
-                    }
-                ],
-                "MinSize": {
-                    "Ref": "NumberOfVFXHosts"
-                },
-                "MaxSize": {
-                    "Ref": "NumberOfVFXHosts"
-                },
-                "Cooldown": "300",
-                "DesiredCapacity": {
-                    "Ref": "NumberOfVFXHosts"
-                },
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": "VFX Host",
-                        "PropagateAtLaunch": "true"
-                    }
-                ]
-            },
-            "CreationPolicy": {
-                "ResourceSignal": {
-                    "Count": {
-                        "Ref": "NumberOfVFXHosts"
-                    },
-                    "Timeout": "PT30M"
-                }
-            }
-        },
-        "VFXHostLaunchConfiguration": {
-            "Type": "AWS::AutoScaling::LaunchConfiguration",
-            "Metadata": {
-                "AWS::CloudFormation::Authentication": {
-                    "S3AccessCreds": {
-                        "type": "S3",
-                        "roleName": {
-                            "Ref": "VFXHostRole"
-                        },
-                        "buckets": [
-                            {
-                                "Ref": "QSS3BucketName"
-                            }
-                        ]
-                    }
-                },
-                "AWS::CloudFormation::Init": {
-                    "configSets": {
-                        "config": [
-                            "setup",
-                            "configInstance",
-                            "joinDomain",
-                            "finalize"
-                        ]
-                    },
-                    "setup": {
-                        "services": {
-                            "windows": {
-                                "Audiosrv": {
-                                    "ensureRunning": "true",
-                                    "enabled": "true"
-                                }
-                            }
-                        },
-                        "files": {
-                            "C:\\cfn\\scripts\\Unzip-Archive.ps1": {
-                                "source": {
-                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}submodules/quickstart-microsoft-utilities/scripts/Unzip-Archive.ps1"
-                                },
-                                "authentication": "S3AccessCreds"
-                            },
-                            "C:\\cfn\\modules\\AWSQuickStart.zip": {
-                                "source": {
-                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}submodules/quickstart-microsoft-utilities/modules/AWSQuickStart.zip"
-                                },
-                                "authentication": "S3AccessCreds"
-                            },
-                            "C:\\cfn\\scripts\\Join-Domain.ps1": {
-                                "source": {
-                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}submodules/quickstart-microsoft-utilities/scripts/Join-Domain.ps1"
-                                },
-                                "authentication": "S3AccessCreds"
-                            },
-                            "C:\\cfn\\scripts\\Restart-Computer.ps1": {
-                                "source": {
-                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}submodules/quickstart-microsoft-utilities/scripts/Restart-Computer.ps1"
-                                },
-                                "authentication": "S3AccessCreds"
-                            }
-                        },
-                        "commands": {
-                            "a-set-execution-policy": {
-                                "command": "powershell.exe -Command \"Set-ExecutionPolicy RemoteSigned -Force\"",
-                                "waitAfterCompletion": "0"
-                            },
-                            "b-unpack-quickstart-module": {
-                                "command": "powershell.exe -Command C:\\cfn\\scripts\\Unzip-Archive.ps1 -Source C:\\cfn\\modules\\AWSQuickStart.zip -Destination C:\\Windows\\system32\\WindowsPowerShell\\v1.0\\Modules\\",
-                                "waitAfterCompletion": "0"
-                            },
-                            "c-init-quickstart-module": {
-                                "command": {
-                                    "Fn::Join": [
-                                        "",
-                                        [
-                                            "powershell.exe -Command \"",
-                                            "New-AWSQuickStartResourceSignal -Stack '",
-                                            {
-                                                "Ref": "AWS::StackName"
-                                            },
-                                            "' -Resource 'VFXHostAutoScalingGroup' -Region '",
-                                            {
-                                                "Ref": "AWS::Region"
-                                            },
-                                            "'\""
-                                        ]
-                                    ]
-                                },
-                                "waitAfterCompletion": "0"
-                            }
-                        }
-                    },
-                    "joinDomain": {
-                        "commands": {
-                            "a-join-domain": {
-                                "command": {
-                                    "Fn::Join": [
-                                        "",
-                                        [
-                                            "powershell.exe -Command \"C:\\cfn\\scripts\\Join-Domain.ps1 -DomainName '",
-                                            {
-                                                "Ref": "DomainDNSName"
-                                            },
-                                            "' -UserName '",
-                                            {
-                                                "Ref": "DomainNetBIOSName"
-                                            },
-                                            "\\",
-                                            {
-                                                "Ref": "DomainAdminUser"
-                                            },
-                                            "' -Password '",
-                                            {
-                                                "Ref": "DomainAdminPassword"
-                                            },
-                                            "'\""
-                                        ]
-                                    ]
-                                },
-                                "waitAfterCompletion": "forever"
-                            }
-                        }
-                    },
-                    "configInstance": {
-                        "files": {
-                            "C:\\cfn\\scripts\\install-packages.ps1": {
-                                "source": {
-                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/install-packages.ps1"
-                                },
-                                "authentication": "S3AccessCreds"
-                            },
-                            "C:\\cfn\\scripts\\install-gpu-drivers.ps1": {
-                                "source": {
-                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/install-gpu-drivers.ps1"
-                                },
-                                "authentication": "S3AccessCreds"
-                            },
-                            "C:\\cfn\\scripts\\install-teradici.ps1": {
-                                "source": {
-                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/install-teradici.ps1"
-                                },
-                                "authentication": "S3AccessCreds"
-                            },
-                            "C:\\cfn\\scripts\\install-wacom-drivers.ps1": {
-                                "source": {
-                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/install-wacom-drivers.ps1"
-                                },
-                                "authentication": "S3AccessCreds"
-                            }
-                        },
-                        "commands": {
-                            "01-install-packages": {
-                                "command": {
-                                    "Fn::Join": [
-                                        "",
-                                        [
-                                            "powershell.exe -ExecutionPolicy Unrestricted C:\\cfn\\scripts\\install-packages.ps1"
-                                        ]
-                                    ]
-                                },
-                                "waitAfterCompletion": "0"
-                            },
-                            "02-install-gpu-drivers": {
-                                "command": {
-                                    "Fn::Join": [
-                                        "",
-                                        [
-                                            "powershell.exe -ExecutionPolicy Unrestricted C:\\cfn\\scripts\\install-gpu-drivers.ps1 -Verbose"
-                                        ]
-                                    ]
-                                },
-                                "waitAfterCompletion": "0"
-                            },
-                            "03-reboot": {
-                                "command": "powershell.exe -Command \"C:\\cfn\\scripts\\Restart-Computer.ps1\"",
-                                "waitAfterCompletion": "forever"
-                            },
-                            "04-install-teradici": {
-                                "command": {
-                                    "Fn::Join": [
-                                        "",
-                                        [
-                                            "powershell.exe -ExecutionPolicy Unrestricted C:\\cfn\\scripts\\install-teradici.ps1"
-                                        ]
-                                    ]
-                                },
-                                "waitAfterCompletion": "0"
-                            },
-                            "05-install-wacom-drivers": {
-                                "command": {
-                                    "Fn::Join": [
-                                        "",
-                                        [
-                                            "powershell.exe -ExecutionPolicy Unrestricted C:\\cfn\\scripts\\install-wacom-drivers.ps1"
-                                        ]
-                                    ]
-                                },
-                                "waitAfterCompletion": "0"
-                            },
-                            "06-reboot": {
-                                "command": "powershell.exe -Command \"C:\\cfn\\scripts\\Restart-Computer.ps1\"",
-                                "waitAfterCompletion": "forever"
-                            }
-                        }
-                    },
-                    "finalize": {
-                        "commands": {
-                            "1-signal-success": {
-                                "command": "powershell.exe -Command \"Write-AWSQuickStartStatus\"",
-                                "waitAfterCompletion": "0"
-                            }
-                        }
-                    }
-                }
-            },
-            "Properties": {
-                "ImageId": {
-                    "Fn::FindInMap": [
-                        "AWSAMIRegionMap",
-                        {
-                            "Ref": "AWS::Region"
-                        },
-                        "WS2016FULLBASE"
-                    ]
-                },
-                "SecurityGroups": [
-                    {
-                        "Ref": "VFXHostSecurityGroup"
-                    },
-                    {
-                        "Ref": "DomainMemberSGID"
-                    }
-                ],
-                "IamInstanceProfile": {
-                    "Ref": "VFXHostProfile"
-                },
-                "InstanceType": {
-                    "Ref": "VFXHostInstanceType"
-                },
-                "BlockDeviceMappings": [
-                    {
-                        "DeviceName": "/dev/sda1",
-                        "Ebs": {
-                            "VolumeSize": {
-                                "Ref": "EBSVolumeSize"
-                            },
-                            "VolumeType": "gp2"
-                        }
-                    }
-                ],
-                "KeyName": {
-                    "Ref": "KeyPairName"
-                },
-                "UserData": {
-                    "Fn::Base64": {
-                        "Fn::Join": [
-                            "",
-                            [
-                                "<script>\n",
-                                "cfn-init.exe -v -c config -s ",
-                                {
-                                    "Ref": "AWS::StackId"
-                                },
-                                " -r VFXHostLaunchConfiguration",
-                                " --region ",
-                                {
-                                    "Ref": "AWS::Region"
-                                },
-                                "\n",
-                                "</script>\n"
-                            ]
-                        ]
-                    }
-                }
-            }
-        }
-    }
-}
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  This template deploys the VFX Workstation Quick Start. **WARNING** This template
+  creates Amazon EC2 Windows instance and related resources. You will be billed for
+  the AWS resources used if you create a stack from this template. (qs-1onmm5nfl)
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Network configuration
+        Parameters:
+          - VPCID
+          - PublicSubnet1ID
+          - PublicSubnet2ID
+      - Label:
+          default: Amazon EC2 configuration
+        Parameters:
+          - VFXHostInstanceType
+          - NumberOfVFXHosts
+          - EBSVolumeSize
+          - VFXHostAccessCIDR
+          - KeyPairName
+      - Label:
+          default: Microsoft Active Directory Configuration
+        Parameters:
+          - DomainDNSName
+          - DomainNetBIOSName
+          - DomainAdminUser
+          - DomainAdminPassword
+          - DomainMemberSGID
+      - Label:
+          default: AWS Quick Start configuration
+        Parameters:
+          - QSS3BucketName
+          - QSS3KeyPrefix
+    ParameterLabels:
+      DomainAdminPassword:
+        default: Domain Admin Password
+      DomainAdminUser:
+        default: Domain Admin User Name
+      DomainDNSName:
+        default: Domain DNS Name
+      DomainMemberSGID:
+        default: Domain Member Security Group ID
+      DomainNetBIOSName:
+        default: Domain NetBIOS Name
+      EBSVolumeSize:
+        default: EBS Volume size for EC2 instance
+      VFXHostInstanceType:
+        default: VFX Host Instance Type
+      VFXHostAccessCIDR:
+        default: VFX Host Access CIDR
+      NumberOfVFXHosts:
+        default: Number of VFX Hosts
+      KeyPairName:
+        default: Key Pair Name
+      PublicSubnet1ID:
+        default: Public Subnet 1 ID
+      PublicSubnet2ID:
+        default: Public Subnet 2 ID
+      QSS3BucketName:
+        default: Quick Start S3 Bucket Name
+      QSS3KeyPrefix:
+        default: Quick Start S3 Key Prefix
+      VPCID:
+        default: VPC ID
+Parameters:
+  DomainAdminPassword:
+    AllowedPattern: (?=^.{6,255}$)((?=.*\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*
+    Description: Password for the domain admin user. Must be at least 8 characters
+      containing letters, numbers and symbols
+    MaxLength: '32'
+    MinLength: '8'
+    NoEcho: 'true'
+    Type: String
+  DomainAdminUser:
+    AllowedPattern: '[a-zA-Z0-9]*'
+    Default: Admin
+    Description: User name for the account that will be added as Domain Administrator.
+      This is separate from the default "Administrator" account
+    MaxLength: '25'
+    MinLength: '5'
+    Type: String
+  DomainDNSName:
+    AllowedPattern: '[a-zA-Z0-9]+\..+'
+    Default: example.com
+    Description: Fully qualified domain name (FQDN) of the forest root domain e.g.
+      corp.example.com
+    MaxLength: '255'
+    MinLength: '2'
+    Type: String
+  DomainMemberSGID:
+    Description: ID of the Domain Member Security Group (e.g., sg-7f16e910)
+    Type: AWS::EC2::SecurityGroup::Id
+  DomainNetBIOSName:
+    AllowedPattern: '[a-zA-Z0-9]+'
+    Default: example
+    Description: NetBIOS name of the domain (upto 15 characters) for users of earlier
+      versions of Windows e.g. CORP
+    MaxLength: '15'
+    MinLength: '1'
+    Type: String
+  EBSVolumeSize:
+    Default: '100'
+    Description: Volume size for the VFX Host, in GiB
+    MaxValue: '16000'
+    MinValue: '100'
+    Type: Number
+  VFXHostInstanceType:
+    AllowedValues:
+      - g3.4xlarge
+      - g3.8xlarge
+      - g3.16xlarge
+    Default: g3.4xlarge
+    Description: Which GPU instance type for the VFX Host (necessary for accelerated
+      vfx workstation performance)
+    Type: String
+  VFXHostAccessCIDR:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.128.0/20
+    Description: CIDR Block for the VFX Host to control authorized access.
+    Type: String
+  KeyPairName:
+    Description: Public/private key pairs allow you to securely connect to your instance
+      after it launches
+    Type: AWS::EC2::KeyPair::KeyName
+  NumberOfVFXHosts:
+    AllowedValues:
+      - '1'
+      - '2'
+      - '3'
+      - '4'
+      - '5'
+      - '6'
+      - '7'
+      - '8'
+    Default: '1'
+    Description: Enter the number of VFX hosts to create
+    Type: String
+  PublicSubnet1ID:
+    Description: ID of the public subnet 1 in Availability Zone 1 (e.g., subnet-e3246d8e)
+    Type: AWS::EC2::Subnet::Id
+  PublicSubnet2ID:
+    Description: ID of the public subnet 2 in Availability Zone 2 (e.g., subnet-e3246d8e)
+    Type: AWS::EC2::Subnet::Id
+  QSS3BucketName:
+    AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$
+    ConstraintDescription: Quick Start bucket name can include numbers, lowercase
+      letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen
+      (-).
+    Default: aws-quickstart
+    Description: S3 bucket name for the Quick Start assets. Quick Start bucket name
+      can include numbers, lowercase letters, uppercase letters, and hyphens (-).
+      It cannot start or end with a hyphen (-).
+    Type: String
+  QSS3KeyPrefix:
+    AllowedPattern: ^[0-9a-zA-Z-/]*$
+    ConstraintDescription: Quick Start key prefix can include numbers, lowercase letters,
+      uppercase letters, hyphens (-), and forward slash (/).
+    Default: quickstart-vfx-workstation-windows/
+    Description: S3 key prefix for the Quick Start assets. Quick Start key prefix
+      can include numbers, lowercase letters, uppercase letters, hyphens (-), and
+      forward slash (/).
+    Type: String
+  VPCID:
+    Description: ID of the VPC (e.g., vpc-0343606e)
+    Type: AWS::EC2::VPC::Id
+Mappings:
+  AWSAMIRegionMap:
+    AMI:
+      WS2016FULLBASE: Windows_Server-2016-English-Full-Base-2019.06.12
+    ap-northeast-1:
+      WS2016FULLBASE: ami-07b21875a32ff7047
+    ap-southeast-1:
+      WS2016FULLBASE: ami-04ea5e0cb6ab293e0
+    ap-southeast-2:
+      WS2016FULLBASE: ami-062543b3f8ea66c89
+    eu-central-1:
+      WS2016FULLBASE: ami-01ff06d6c38ed6008
+    eu-west-1:
+      WS2016FULLBASE: ami-0a2b07f79c45eeef1
+    us-east-1:
+      WS2016FULLBASE: ami-0f969b429284d6156
+    us-east-2:
+      WS2016FULLBASE: ami-02ec6f788a1f1a739
+    us-west-1:
+      WS2016FULLBASE: ami-0a017e6b84bbbca59
+    us-west-2:
+      WS2016FULLBASE: ami-0bd8c602fafdca7b5
+Rules:
+  SubnetsInVPC:
+    Assertions:
+      - Assert: !EachMemberIn
+          - !ValueOfAll
+            - AWS::EC2::Subnet::Id
+            - VpcId
+          - !RefAll 'AWS::EC2::VPC::Id'
+        AssertDescription: All subnets must be in the VPC
+Resources:
+  VFXHostRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Policies:
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - s3:GetObject
+                Resource: !Sub 'arn:aws:s3:::${QSS3BucketName}/${QSS3KeyPrefix}*'
+                Effect: Allow
+              - Action:
+                  - s3:ListBucket
+                Resource: !Sub 'arn:aws:s3:::ec2-windows-nvidia-drivers'
+                Effect: Allow
+              - Action:
+                  - s3:GetObject
+                Resource: !Sub 'arn:aws:s3:::ec2-windows-nvidia-drivers/*'
+                Effect: Allow
+          PolicyName: aws-quick-start-s3-policy
+      Path: /
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Effect: Allow
+        Version: '2012-10-17'
+  VFXHostProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref 'VFXHostRole'
+      Path: /
+  VFXHostSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ssh and rdp
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '3389'
+          ToPort: '3389'
+          SourceSecurityGroupId: !Ref 'DomainMemberSGID'
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: !Ref 'VFXHostAccessCIDR'
+        - IpProtocol: udp
+          FromPort: '4172'
+          ToPort: '4172'
+          CidrIp: !Ref 'VFXHostAccessCIDR'
+        - IpProtocol: tcp
+          FromPort: '4172'
+          ToPort: '4172'
+          CidrIp: !Ref 'VFXHostAccessCIDR'
+      VpcId: !Ref 'VPCID'
+  VFXHostAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      LaunchConfigurationName: !Ref 'VFXHostLaunchConfiguration'
+      VPCZoneIdentifier:
+        - !Ref 'PublicSubnet1ID'
+        - !Ref 'PublicSubnet2ID'
+      MinSize: !Ref 'NumberOfVFXHosts'
+      MaxSize: !Ref 'NumberOfVFXHosts'
+      Cooldown: '300'
+      DesiredCapacity: !Ref 'NumberOfVFXHosts'
+      Tags:
+        - Key: Name
+          Value: VFX Host
+          PropagateAtLaunch: 'true'
+    CreationPolicy:
+      ResourceSignal:
+        Count: !Ref 'NumberOfVFXHosts'
+        Timeout: PT30M
+  VFXHostLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Metadata:
+      AWS::CloudFormation::Authentication:
+        S3AccessCreds:
+          type: S3
+          roleName: !Ref 'VFXHostRole'
+          buckets:
+            - !Ref 'QSS3BucketName'
+      AWS::CloudFormation::Init:
+        configSets:
+          config:
+            - setup
+            - configInstance
+            - joinDomain
+            - finalize
+        setup:
+          services:
+            windows:
+              Audiosrv:
+                ensureRunning: 'true'
+                enabled: 'true'
+          files:
+            C:\cfn\scripts\Unzip-Archive.ps1:
+              source: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}submodules/quickstart-microsoft-utilities/scripts/Unzip-Archive.ps1'
+              authentication: S3AccessCreds
+            C:\cfn\modules\AWSQuickStart.zip:
+              source: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}submodules/quickstart-microsoft-utilities/modules/AWSQuickStart.zip'
+              authentication: S3AccessCreds
+            C:\cfn\scripts\Join-Domain.ps1:
+              source: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}submodules/quickstart-microsoft-utilities/scripts/Join-Domain.ps1'
+              authentication: S3AccessCreds
+            C:\cfn\scripts\Restart-Computer.ps1:
+              source: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}submodules/quickstart-microsoft-utilities/scripts/Restart-Computer.ps1'
+              authentication: S3AccessCreds
+          commands:
+            a-set-execution-policy:
+              command: powershell.exe -Command "Set-ExecutionPolicy RemoteSigned -Force"
+              waitAfterCompletion: '0'
+            b-unpack-quickstart-module:
+              command: powershell.exe -Command C:\cfn\scripts\Unzip-Archive.ps1 -Source
+                C:\cfn\modules\AWSQuickStart.zip -Destination C:\Windows\system32\WindowsPowerShell\v1.0\Modules\
+              waitAfterCompletion: '0'
+            c-init-quickstart-module:
+              command: !Join
+                - ''
+                - - powershell.exe -Command "
+                  - New-AWSQuickStartResourceSignal -Stack '
+                  - !Ref 'AWS::StackName'
+                  - ''' -Resource ''VFXHostAutoScalingGroup'' -Region '''
+                  - !Ref 'AWS::Region'
+                  - '''"'
+              waitAfterCompletion: '0'
+        joinDomain:
+          commands:
+            a-join-domain:
+              command: !Join
+                - ''
+                - - powershell.exe -Command "C:\cfn\scripts\Join-Domain.ps1 -DomainName
+                    '
+                  - !Ref 'DomainDNSName'
+                  - ''' -UserName '''
+                  - !Ref 'DomainNetBIOSName'
+                  - \
+                  - !Ref 'DomainAdminUser'
+                  - ''' -Password '''
+                  - !Ref 'DomainAdminPassword'
+                  - '''"'
+              waitAfterCompletion: forever
+        configInstance:
+          files:
+            C:\cfn\scripts\install-packages.ps1:
+              source: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/install-packages.ps1'
+              authentication: S3AccessCreds
+            C:\cfn\scripts\install-gpu-drivers.ps1:
+              source: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/install-gpu-drivers.ps1'
+              authentication: S3AccessCreds
+            C:\cfn\scripts\install-teradici.ps1:
+              source: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/install-teradici.ps1'
+              authentication: S3AccessCreds
+            C:\cfn\scripts\install-wacom-drivers.ps1:
+              source: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/install-wacom-drivers.ps1'
+              authentication: S3AccessCreds
+          commands:
+            '01-install-packages':
+              command: !Join
+                - ''
+                - - powershell.exe -ExecutionPolicy Unrestricted C:\cfn\scripts\install-packages.ps1
+              waitAfterCompletion: '0'
+            '02-install-gpu-drivers':
+              command: !Join
+                - ''
+                - - powershell.exe -ExecutionPolicy Unrestricted C:\cfn\scripts\install-gpu-drivers.ps1
+                    -Verbose
+              waitAfterCompletion: '0'
+            '03-reboot':
+              command: powershell.exe -Command "C:\cfn\scripts\Restart-Computer.ps1"
+              waitAfterCompletion: forever
+            '04-install-teradici':
+              command: !Join
+                - ''
+                - - powershell.exe -ExecutionPolicy Unrestricted C:\cfn\scripts\install-teradici.ps1
+              waitAfterCompletion: '0'
+            '05-install-wacom-drivers':
+              command: !Join
+                - ''
+                - - powershell.exe -ExecutionPolicy Unrestricted C:\cfn\scripts\install-wacom-drivers.ps1
+              waitAfterCompletion: '0'
+            '06-reboot':
+              command: powershell.exe -Command "C:\cfn\scripts\Restart-Computer.ps1"
+              waitAfterCompletion: forever
+        finalize:
+          commands:
+            1-signal-success:
+              command: powershell.exe -Command "Write-AWSQuickStartStatus"
+              waitAfterCompletion: '0'
+    Properties:
+      ImageId: !FindInMap
+        - AWSAMIRegionMap
+        - !Ref 'AWS::Region'
+        - WS2016FULLBASE
+      SecurityGroups:
+        - !Ref 'VFXHostSecurityGroup'
+        - !Ref 'DomainMemberSGID'
+      IamInstanceProfile: !Ref 'VFXHostProfile'
+      InstanceType: !Ref 'VFXHostInstanceType'
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref 'EBSVolumeSize'
+            VolumeType: gp2
+      KeyName: !Ref 'KeyPairName'
+      UserData: !Base64
+        Fn::Join:
+          - ''
+          - - "<script>\n"
+            - 'cfn-init.exe -v -c config -s '
+            - !Ref 'AWS::StackId'
+            - ' -r VFXHostLaunchConfiguration'
+            - ' --region '
+            - !Ref 'AWS::Region'
+            - "\n"
+            - "</script>\n"
