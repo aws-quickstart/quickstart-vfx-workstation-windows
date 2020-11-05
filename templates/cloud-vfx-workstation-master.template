@@ -158,6 +158,7 @@ Parameters:
     Type: String
   NumberOfRDGWHosts:
     AllowedValues:
+      - '0'
       - '1'
       - '2'
       - '3'
@@ -269,6 +270,10 @@ Rules:
           region
 Conditions:
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
+  IncludeRDGW: !Not
+    - !Equals
+      - !Ref NumberOfRDGWHosts
+      - '0'
 Resources:
   VPCStack:
     Type: AWS::CloudFormation::Stack
@@ -315,6 +320,7 @@ Resources:
         VPCCIDR: !Ref 'VPCCIDR'
   RDGWStack:
     DependsOn: ADStack
+    Condition: IncludeRDGW
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL:
