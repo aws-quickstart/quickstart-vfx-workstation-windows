@@ -12,6 +12,10 @@
         "ParameterValue": "$[taskcat_genpass_16A]"
     },
     {
+        "ParameterKey": "NumberOfRDGWHosts",
+        "ParameterValue": "0"
+    },
+    {
         "ParameterKey": "VFXHostInstanceType",
         "ParameterValue": "g3.4xlarge"
     },
